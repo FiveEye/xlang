@@ -1,4 +1,4 @@
-data Val = I Int | S String | L [Val] | F Func | E Expr | ST State | Nil deriving (Show)
+data Val = I Integer | S String | L [Val] | F Func | E Expr | ST State | Nil deriving (Show)
 
 data Proto = FP [String] Expr deriving (Show)
 
@@ -33,10 +33,15 @@ def (s, (Call _ (x:y:[]))) = (ns, (Value value))
 		ns = (name, value):s
 def _ = undefined
 
---ifel :: (State, Expr) -> (State, Expr)
---ifel (s, (Call _ (x:y:z[]))) = 
---	where
---		(I ret) = 
+ifel :: (State, Expr) -> (State, Expr)
+ifel (s, (Call _ (x:y:z:[]))) = if ret == 0 then exec (s, z) else exec (s, y)
+	where
+		(I ret) = exec2Val s x
+ifel _ = undefined
+
+strlst :: (State, Expr) -> (State, Expr)
+strlst _ = undefined
+		
 
 lmd :: (State, Expr) -> (State, Expr)
 lmd (s, (Call _ (x:y:[]))) = undefined
@@ -56,6 +61,7 @@ exec (s, Call e l) = case (exec2Val s e) of
 		where
 			ts = (zip argv (map (exec2Val s) l)) ++ ps
 			(_, ret) = exec (ts, body)
+			
 		
 
 		
@@ -95,10 +101,19 @@ parser = undefined
 		
 
 func0 = MF (FP ["a", "b"] (Call (Var "+") [Var "a", Var "b"])) state
-state = [("a", I 1), ("b", I 2), ("c", I 3), ("d", I 4), ("+", F (NF add)), ("def", F (NF def)), ("func0", F func0)] :: State
+func1 = MF (FP ["n"] (Call (Var "if") [Var "n", Call (Var "+") [Var "n", Call (Var "func1") [Call (Var "+") [Var "n", Value (I (-1))]]], Value (I 0)])) state
+func2 = MF (FP ["n"] (Call (Var "if") [Var "n", Value (I 1), Value (I 0)])) state
+func3 = MF (FP ["n"] (Var "n")) state
+
+fib = MF (FP ["a", "b", "n"] (Call (Var "if") [Var "n", Call (Var "fib") [Var "b", Call (Var "+") [Var "a", Var "b"], Call (Var "+") [Var "n", Value (I (-1))]], Var "a"])) state
+
+state = [("z", I 0), ("a", I 1), ("b", I 2), ("c", I 3), ("d", I 4), ("func0", F func0), ("func1", F func1), ("func2", F func2), ("func3", F func3), ("fib", F fib), ("+", F (NF add)), ("def", F (NF def)), ("if", F (NF ifel))] :: State
 
 expr0 = Call (Var "+") [Value (I 1), Var "b"]
 expr1 = Call (Var "def") [Value (S "a"), Value (I 3)]
 expr2 = Call (Var "func0") [Var "c", Var "d"]
+expr3 = Call (Var "func1") [Var "c"]
+expr4 = Call (Var "func2") [Var "c"]
+expr5 = Call (Var "fib") [Value (I 0), Value (I 1), Var "d"]
 
 originStr = "(def f (lambda (x y) (+ x Y)))"
